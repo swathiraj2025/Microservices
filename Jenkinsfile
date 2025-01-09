@@ -2,19 +2,22 @@ pipeline {
     agent any
 
     stages {
-        stage('Deploy To Kubernetes') {
+        stage('Build & Tag Docker Image') {
             steps {
-                withKubeCredentials(kubectlCredentials: [[caCertificate: '', clusterName: 'EKS-1', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', serverUrl: 'https://3B038E5EC8BBFE74265172A90B7220E6.gr7.ap-south-1.eks.amazonaws.com']]) {
-                    sh "kubectl apply -f deployment-service.yml"
-                    
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker build -t kanha05/frontend:latest ."
+                    }
                 }
             }
         }
         
-        stage('verify Deployment') {
+        stage('Push Docker Image') {
             steps {
-                withKubeCredentials(kubectlCredentials: [[caCertificate: '', clusterName: 'EKS-1', contextName: '', credentialsId: 'k8-token', namespace: 'webapps', serverUrl: 'https://3B038E5EC8BBFE74265172A90B7220E6.gr7.ap-south-1.eks.amazonaws.com']]) {
-                    sh "kubectl get svc -n webapps"
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker push kanha05/frontend:latest"
+                    }
                 }
             }
         }
